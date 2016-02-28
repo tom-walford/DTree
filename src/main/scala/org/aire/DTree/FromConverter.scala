@@ -12,19 +12,19 @@ trait FromImplicitConversions {
   trait NodeConverter[Child] {
     protected final type SelfChild = Child
     protected type ReturnChild <: SelfChild
-    type Return[T <: Node, X <: SelfChild, H <: HList]
-    def from[N <: Node, H <: HList](keys : H) : Return[N, ReturnChild, H]
+    type Return[X <: SelfChild, H <: HList]
+    def from[H <: HList](keys : H) : Return[ReturnChild, H]
   }
   trait BranchConversion[S <: Node] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return[T <: Node, X <: SelfChild, H <: HList] = FromBranch[T, X, H]
-    def from[N <: Node, H <: HList](keys : H): Return[N, S, H] = new FromBranch[N, S, H](keys)
+    override type Return[X <: SelfChild, H <: HList] = FromBranch[X, H]
+    def from[H <: HList](keys : H): Return[S, H] = new FromBranch[S, H](keys)
   }
   trait LeafConversion[S <: LeafNode] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return[T <: Node, X <: SelfChild, H <: HList] = FromLeaf[T, X, H]
+    override type Return[X <: SelfChild, H <: HList] = FromLeaf[X, H]
 
-    def from[N <: Node, H <: HList](keys: H): Return[N, S, H] = new FromLeaf[N, S, H](keys)
+    def from[H <: HList](keys: H): Return[S, H] = new FromLeaf[S, H](keys)
   }
 }
 

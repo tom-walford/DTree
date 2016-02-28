@@ -5,9 +5,13 @@ import shapeless.HList
 import scala.concurrent.Future
 
 trait NodeTypes {
-  trait Node {
+  sealed trait Node {
     type Child <: Node
     type Value <: Keyed
+  }
+  trait TreeNode[K, T <: KeyedEntity[K]] extends Node {
+    final override type Value = T
+    def value: Value
   }
   trait TNil extends Node {
     override type Child = Nothing
@@ -25,27 +29,25 @@ trait NodeTypes {
   trait Query extends Morphable {
     self =>
     def keys: HList
-    def map[A](fnc: Value => A): Queryable[A,Tree,RootValue] = new Queryable[A,Tree,RootValue] {
+    def map[A](fnc: Value => A): Queryable[A,RootValue] = new Queryable[A,RootValue] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.map(fnc))
     }
-    def flatMap[A](fnc: Value => Option[A]): Queryable[A,Tree,RootValue] = new Queryable[A,Tree,RootValue] {
+    def flatMap[A](fnc: Value => Option[A]): Queryable[A,RootValue] = new Queryable[A,RootValue] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.flatMap(fnc))
     }
-    def filter(fnc: Value => Boolean): Queryable[Value,Tree,RootValue] = new Queryable[Value,Tree,RootValue] {
+    def filter(fnc: Value => Boolean): Queryable[Value,RootValue] = new Queryable[Value,RootValue] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.filter(fnc))
     }
   }
-  trait Queryable[A, B <: Node, C] extends Query with Evaluable {
+  trait Queryable[A, B] extends Query with Evaluable {
     override type Value = A
-    override type Tree = B
-    override type RootValue = C
+    override type RootValue = B
   }
 
   trait Morphable {
-    type Tree <: Node
     type RootValue
     type Value
     def keys: HList
