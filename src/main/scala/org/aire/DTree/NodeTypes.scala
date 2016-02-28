@@ -1,6 +1,6 @@
 package org.aire.DTree
 
-import shapeless.HList
+import shapeless._
 
 import scala.concurrent.Future
 
@@ -28,30 +28,29 @@ trait NodeTypes {
   }
   trait Query extends Morphable {
     self =>
-    def keys: HList
-    def map[A](fnc: Value => A): Queryable[A,RootValue] = new Queryable[A,RootValue] {
+    def map[A](fnc: Value => A): Queryable[A,CurrentNode] = new Queryable[A,CurrentNode] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.map(fnc))
     }
-    def flatMap[A](fnc: Value => Option[A]): Queryable[A,RootValue] = new Queryable[A,RootValue] {
+    def flatMap[A](fnc: Value => Option[A]): Queryable[A,CurrentNode] = new Queryable[A,CurrentNode] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.flatMap(fnc))
     }
-    def filter(fnc: Value => Boolean): Queryable[Value,RootValue] = new Queryable[Value,RootValue] {
+    def filter(fnc: Value => Boolean): Queryable[Value,CurrentNode] = new Queryable[Value,CurrentNode] {
       override val keys = self.keys
       override val morph = self.morph andThen(_.filter(fnc))
     }
   }
-  trait Queryable[A, B] extends Query with Evaluable {
+  trait Queryable[A, B <: Node] extends Query with Evaluable {
     override type Value = A
-    override type RootValue = B
+    override type CurrentNode = B
   }
 
   trait Morphable {
-    type RootValue
     type Value
-    def keys: HList
-    def morph: Option[RootValue] => Option[Value]
+    type CurrentNode <: Node
+    protected def keys: CurrentNode#Value#Key :: HList
+    def morph: Option[CurrentNode#Value] => Option[Value]
   }
   trait Evaluable extends Morphable {
     def eval(tree: Builder): Future[Value] = tree.build(keys, morph)

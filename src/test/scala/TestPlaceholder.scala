@@ -18,5 +18,5 @@ object TestPlaceholder {
     .map(_ => "")
     .flatMap(_ => Some(1)).eval(k)
 
-  k.from("3").andThen(2).keys
+  k.from("3").andThen(2).keys.head != 1
 }

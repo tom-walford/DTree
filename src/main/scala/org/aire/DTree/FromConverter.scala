@@ -1,6 +1,6 @@
 package org.aire.DTree
 
-import shapeless.HList
+import shapeless.{::, HList}
 
 trait FromConverter extends FromImplicitConversions with LowPriorityConversion {
   self: FromBuilder with NodeTypes =>
@@ -9,22 +9,23 @@ trait FromConverter extends FromImplicitConversions with LowPriorityConversion {
 
 trait FromImplicitConversions {
   self: NodeTypes with FromBuilder =>
-  trait NodeConverter[Child] {
+  trait NodeConverter[Child <: Node] {
     protected final type SelfChild = Child
     protected type ReturnChild <: SelfChild
-    type Return[X <: SelfChild, H <: HList]
-    def from[H <: HList](keys : H) : Return[ReturnChild, H]
+    protected type KeySet = SelfChild#Value#Key :: HList
+    type Return
+    def from(keys : KeySet) : Return
   }
   trait BranchConversion[S <: Node] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return[X <: SelfChild, H <: HList] = FromBranch[X, H]
-    def from[H <: HList](keys : H): Return[S, H] = new FromBranch[S, H](keys)
+    override type Return = FromBranch[S, KeySet]
+    def from(keys : KeySet): Return = new FromBranch[S, KeySet](keys)
   }
   trait LeafConversion[S <: LeafNode] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return[X <: SelfChild, H <: HList] = FromLeaf[X, H]
+    override type Return = FromLeaf[S, KeySet]
 
-    def from[H <: HList](keys: H): Return[S, H] = new FromLeaf[S, H](keys)
+    def from(keys: KeySet): Return = new FromLeaf[S, KeySet](keys)
   }
 }
 
