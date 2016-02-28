@@ -1,6 +1,6 @@
 package org.aire.DTree
 
-import shapeless._
+import org.aire.DTree.utils.FlattenTuple
 
 import scala.concurrent.Future
 
@@ -28,15 +28,19 @@ trait NodeTypes {
   }
   trait Query extends Morphable {
     self =>
+    def next = FlattenTuple(keys)._1
     def map[A](fnc: Value => A): Queryable[A,CurrentNode] = new Queryable[A,CurrentNode] {
+      override type Keys = self.Keys
       override val keys = self.keys
       override val morph = self.morph andThen(_.map(fnc))
     }
     def flatMap[A](fnc: Value => Option[A]): Queryable[A,CurrentNode] = new Queryable[A,CurrentNode] {
+      override type Keys = self.Keys
       override val keys = self.keys
       override val morph = self.morph andThen(_.flatMap(fnc))
     }
     def filter(fnc: Value => Boolean): Queryable[Value,CurrentNode] = new Queryable[Value,CurrentNode] {
+      override type Keys = self.Keys
       override val keys = self.keys
       override val morph = self.morph andThen(_.filter(fnc))
     }
@@ -49,13 +53,14 @@ trait NodeTypes {
   trait Morphable {
     type Value
     type CurrentNode <: Node
-    protected def keys: CurrentNode#Value#Key :: HList
+    type Keys
+    protected def keys: Keys
     def morph: Option[CurrentNode#Value] => Option[Value]
   }
   trait Evaluable extends Morphable {
     def eval(tree: Builder): Future[Value] = tree.build(keys, morph)
   }
   trait Builder {
-    def build[A, B](keys: HList, mapFunc: Option[A] => Option[B]): Future[B]
+    def build[A, B, P](keys: P, mapFunc: Option[A] => Option[B]): Future[B]
   }
 }

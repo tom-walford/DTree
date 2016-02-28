@@ -1,7 +1,5 @@
 package org.aire.DTree
 
-import shapeless.{::, HList}
-
 trait FromConverter extends FromImplicitConversions with LowPriorityConversion {
   self: FromBuilder with NodeTypes =>
     implicit def ncLeaf[A <: LeafNode]: LeafConversion[A] = new LeafConversion[A] {}
@@ -12,20 +10,20 @@ trait FromImplicitConversions {
   trait NodeConverter[Child <: Node] {
     protected final type SelfChild = Child
     protected type ReturnChild <: SelfChild
-    protected type KeySet = SelfChild#Value#Key :: HList
-    type Return
-    def from(keys : KeySet) : Return
+    protected type KeySet[X] = X
+    type Return[X]
+    def from[X](keys : KeySet[X]) : Return[X]
   }
   trait BranchConversion[S <: Node] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return = FromBranch[S, KeySet]
-    def from(keys : KeySet): Return = new FromBranch[S, KeySet](keys)
+    override type Return[X] = FromBranch[S, KeySet[X]]
+    def from[X](keys : KeySet[X]) : Return[X] = new FromBranch[S, KeySet[X]](keys)
   }
   trait LeafConversion[S <: LeafNode] extends NodeConverter[S] {
     override protected type ReturnChild = S
-    override type Return = FromLeaf[S, KeySet]
+    override type Return[X] = FromLeaf[S, KeySet[X]]
 
-    def from(keys: KeySet): Return = new FromLeaf[S, KeySet](keys)
+    def from[X](keys : KeySet[X]) : Return[X] = new FromLeaf[S, KeySet[X]](keys)
   }
 }
 
